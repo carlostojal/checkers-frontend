@@ -1,5 +1,180 @@
 <html>
+    <head>
+        <title>Checkers</title>
+        <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    </head>
     <body>
-        <h1>Hello World 123</h1>
+        <h1>Checkers</h1>
+        <script>
+
+            const socket = io("http://localhost:3000");
+
+            var player_side = null;
+
+            socket.on("game_start", (board) => {
+
+                document.getElementById("waiting").hidden = true;
+                document.getElementById("board_area").hidden = false;
+
+                renderBoard(board);
+
+            });
+
+            socket.on("side", (side) => {
+
+                player_side = side;
+
+            });
+
+        </script>
+
+        <div id="join_room_form">
+            <p>Your name:</p>
+            <input id="player_name" type="text"/>
+            <p>Room name:</p>
+            <input id="room_name" type="text"/>
+            <p>Password:</p>
+            <input id="room_password" type="password"/>
+            <button onclick="onJoin()">Join</button>
+        </div>
+
+        <h3 id="waiting" hidden>Waiting for opponent...</h3>
     </body>
+    <script>
+
+        function onJoin() {
+
+            let player_name = document.getElementById("player_name").value;
+            let room_name = document.getElementById("room_name").value;
+            let room_password = document.getElementById("room_password").value;
+
+            socket.emit("join", {
+                player_name,
+                room_name,
+                room_password 
+            }, (response) => {
+                if(response == "OK") {
+
+                    document.getElementById("join_room_form").hidden = true;
+
+                    document.getElementById("waiting").hidden = false;
+
+                } else {
+                    alert(response);
+                }
+            });
+
+        }
+
+    </script>
+
+    <style>
+
+        td {
+            width: 50px;
+            height: 50px;
+            background-color: blue;
+        }
+
+    </style>
+
+    <div id="board_area" hidden>
+        <table>
+            <tbody id="board">
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+
+        var selectedCell = null;
+        var destinationCell = null;
+
+        function startCellEvents() {
+
+            function onCellClick(cell) {
+
+                console.log(cell.x);
+                console.log(cell.y);
+                
+                if(!selectedCell) {
+
+                    cell.style.backgroundColor = "red";
+                    selectedCell = {
+                        x: cell.x,
+                        y: cell.y
+                    };
+
+                } else {
+
+                    destinationCell = {
+                        x: cell.x,
+                        y: cell.y
+                    };
+
+                    if(selectedCell != destinationCell) {
+
+                        socket.emit("play", {
+                            from: selectedCell,
+                            to: destinationCell
+                        }, (response) => {
+
+                            alert(response);
+
+                        });
+
+                    }
+
+                    // TODO: undo cell color change
+                    selectedCell = null;
+                    destinationCell = null;
+                }
+            }
+
+            let cells = document.getElementsByTagName("td");
+
+            for(let i = 0; i < cells.length; i++) {
+                cells[i].onclick = function() {onCellClick(cells[i])};
+            }
+
+        }
+
+        function renderBoard(board) {
+            
+            let table = document.getElementById("board");
+
+            board.map((row, row_index) => {
+
+                let t_row = table.insertRow();
+
+                row.map((cell, col_index) => {
+                    
+                    let t_cell = t_row.insertCell(col_index);
+
+                    let cell_color = "white";
+
+                    switch(cell) {
+
+                        case 'A':
+                            cell_color = "black";
+                            break;
+                        case 'B':
+                            cell_color = "yellow";
+                            break;
+                    }
+
+                    t_cell.style.backgroundColor = cell_color;
+
+                    t_cell.style.width = 50;
+                    t_cell.style.height = 50;
+
+                    t_cell.x = col_index;
+                    t_cell.y = row_index;
+
+                });
+            });
+
+            startCellEvents();
+        }
+    </script>
 </html>
