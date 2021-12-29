@@ -143,6 +143,9 @@
             
             let table = document.getElementById("board");
 
+            if(player_side == 'B')
+                board = invertBoard(board);
+
             board.map((row, row_index) => {
 
                 let t_row = table.insertRow();
@@ -175,6 +178,19 @@
             });
 
             startCellEvents();
+        }
+
+        function invertBoard(original) {
+
+            let board = original;
+
+            board.reverse();
+
+            board = board.map((row) => {
+                row.reverse();
+            });
+
+            return board;
         }
     </script>
 </html>
